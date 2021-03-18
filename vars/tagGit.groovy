@@ -95,7 +95,10 @@ def tagAndPush(Map <String, ?> config){
   def tag_message = "${prefix(config.release_qualifier as String)} of 3scale ${config.major_version}.${config.minor_version}.${config.patch_version}"
 
   sh "git tag --sign --message='${tag_message}' ${tag}"
-  sh "git push origin ${tag}"
+  sh """
+    export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"
+    git push origin ${tag}
+  """
 
 }
 
