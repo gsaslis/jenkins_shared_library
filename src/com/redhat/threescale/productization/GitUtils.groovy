@@ -17,28 +17,52 @@ def checkout(Map <String, ?> config){
 	validatingUtils.ensureNotEmpty(config, 'branch')
 	validatingUtils.ensureNotEmpty(config, 'repository')
 
-	def checkoutExtensions =
-			(config.repository_name) ?
+
+	def checkoutExtensions = []
+	def unstashed = false
+
+	if (config.repository_name) {
+
+		if (fileExists config.repository_name)
+			return
+
+		unstash config.repository_name
+		unstashed = fileExists config.repository_name
+
+
+		checkoutExtensions =
 				[[
-								$class: 'RelativeTargetDirectory',
-								relativeTargetDir: config.repository_name
+						 $class           : 'RelativeTargetDirectory',
+						 relativeTargetDir: config.repository_name
 
-				 ]] :
-				[]
+				 ]]
+	}
+	if(!unstashed) {
 
-	checkout([
-			$class: 'GitSCM',
-			branches: [[name: "*/${config.branch}"]],
-			doGenerateSubmoduleConfigurations: false,
-			extensions: checkoutExtensions,
-			submoduleCfg: [],
-			userRemoteConfigs: [
-					[
-							credentialsId: config.git_user_ssh_key,
-							url: config.repository
-					]
-			]
-	])
+		checkout([
+				$class                           : 'GitSCM',
+				branches                         : [[name: "*/${config.branch}"]],
+				doGenerateSubmoduleConfigurations: false,
+				extensions                       : checkoutExtensions,
+				submoduleCfg                     : [],
+				userRemoteConfigs                : [
+						[
+								credentialsId: config.git_user_ssh_key,
+								url          : config.repository
+						]
+				]
+		])
+
+		stash(
+				name: config.repository_name,
+				includes: "${config.repository_name}/**",
+				useDefaultExcludes: false,
+				excludes: '',
+		)
+
+
+
+	}
 }
 
 
@@ -55,16 +79,26 @@ def configGitAuthor(Map <String, ?> config) {
 	def validatingUtils = new ValidatingUtils()
 	validatingUtils.ensureNotEmpty(config, 'github_user_credentials_id')
 
-	withCredentials([
-			usernamePassword(
-					credentialsId: config.github_user_credentials_id,
-					usernameVariable: 'GIT_USER',
-					passwordVariable: 'GIT_EMAIL'
-			),
-	]) {
+	unstash 'gitconfig'
+	def unstashed = fileExists '/home/git/.gitconfig'
+	if(!unstashed) {
+		withCredentials([
+				usernamePassword(
+						credentialsId: config.github_user_credentials_id,
+						usernameVariable: 'GIT_USER',
+						passwordVariable: 'GIT_EMAIL'
+				),
+		]) {
 
-		sh 'git config --global user.name "${GIT_USER}"'
-		sh 'git config --global user.email "${GIT_EMAIL}"'
+			sh 'git config --global user.name "${GIT_USER}"'
+			sh 'git config --global user.email "${GIT_EMAIL}"'
+
+			stash(
+					name: 'gitconfig',
+					includes: "/home/git/.gitconfig",
+			)
+
+		}
 	}
 }
 
