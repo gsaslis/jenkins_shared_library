@@ -17,8 +17,28 @@ def checkout(Map <String, ?> config){
 	validatingUtils.ensureNotEmpty(config, 'branch')
 	validatingUtils.ensureNotEmpty(config, 'repository')
 
+	def checkoutExtensions =
+			(config.repository_name) ?
+				[[
+								$class: 'RelativeTargetDirectory',
+								relativeTargetDir: config.repository_name
 
-	git branch: config.branch, credentialsId: config.git_user_ssh_key, url: config.repository
+				 ]] :
+				[]
+
+	checkout([
+			$class: 'GitSCM',
+			branches: [[name: "*/${config.branch}"]],
+			doGenerateSubmoduleConfigurations: false,
+			extensions: checkoutExtensions,
+			submoduleCfg: [],
+			userRemoteConfigs: [
+					[
+							credentialsId: config.git_user_ssh_key,
+							url: config.repository
+					]
+			]
+	])
 }
 
 
