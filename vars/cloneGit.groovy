@@ -39,7 +39,7 @@ def call(Map <String, ?> config = [:]) {
 
               gitUtils.configGitAuthor(config)
 
-              gitUtils.checkout(config)
+              gitUtils.clone(config)
 
             }
           }

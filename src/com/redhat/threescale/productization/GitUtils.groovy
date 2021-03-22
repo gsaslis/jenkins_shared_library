@@ -11,29 +11,29 @@ def fixNonRootUserIdInContainer(){
 	sh '/usr/bin/fixUser.sh'
 }
 
-def checkout(Map <String, ?> config){
-	def validatingUtils = new ValidatingUtils()
-	validatingUtils.ensureNotEmpty(config, 'git_user_ssh_key')
-	validatingUtils.ensureNotEmpty(config, 'branch')
-	validatingUtils.ensureNotEmpty(config, 'repository')
-
+def clone(Map <String, ?> config){
 
 	def checkoutExtensions = []
 	def unstashed = false
 
-	if (config.repository_name) {
+	if (config.stash_folder_name) {
 
-		if (fileExists config.repository_name)
+		if (fileExists(config.stash_folder_name)) {
 			return
+		}
 
-		unstash config.repository_name
-		unstashed = fileExists config.repository_name
+		try{
+			unstash config.stash_folder_name
+		} catch (Exception ignored) {
+			//first time creating the stash
+		}
+		unstashed = fileExists config.stash_folder_name
 
 
 		checkoutExtensions =
 				[[
 						 $class           : 'RelativeTargetDirectory',
-						 relativeTargetDir: config.repository_name
+						 relativeTargetDir: config.stash_folder_name
 
 				 ]]
 	}
@@ -54,13 +54,11 @@ def checkout(Map <String, ?> config){
 		])
 
 		stash(
-				name: config.repository_name,
-				includes: "${config.repository_name}/**",
+				name: config.stash_folder_name,
+				includes: "${config.stash_folder_name}/**",
 				useDefaultExcludes: false,
 				excludes: '',
 		)
-
-
 
 	}
 }
@@ -77,28 +75,19 @@ def checkout(Map <String, ?> config){
 def configGitAuthor(Map <String, ?> config) {
 
 	def validatingUtils = new ValidatingUtils()
-	validatingUtils.ensureNotEmpty(config, 'github_user_credentials_id')
+	validatingUtils.ensureNotEmpty(config, 'git_user_credentials_id')
 
-	unstash 'gitconfig'
-	def unstashed = fileExists '/home/git/.gitconfig'
-	if(!unstashed) {
-		withCredentials([
-				usernamePassword(
-						credentialsId: config.github_user_credentials_id,
-						usernameVariable: 'GIT_USER',
-						passwordVariable: 'GIT_EMAIL'
-				),
-		]) {
+	withCredentials([
+			usernamePassword(
+					credentialsId: config.git_user_credentials_id,
+					usernameVariable: 'GIT_USER',
+					passwordVariable: 'GIT_EMAIL'
+			),
+	]) {
 
-			sh 'git config --global user.name "${GIT_USER}"'
-			sh 'git config --global user.email "${GIT_EMAIL}"'
+		sh 'git config --global user.name "${GIT_USER}"'
+		sh 'git config --global user.email "${GIT_EMAIL}"'
 
-			stash(
-					name: 'gitconfig',
-					includes: "/home/git/.gitconfig",
-			)
-
-		}
 	}
 }
 
@@ -139,6 +128,42 @@ def gpgSetupForGit(Map <String, ?> config) {
 
 		sh 'git config --list'
 	}
+}
+
+def commitAndPush(Map <String, ?> config){
+
+	dir(config.stash_folder_name) {
+
+		sh """
+			git checkout -b ${config.pr_branch}
+			git add ${config.file_name}
+			git commit --all --gpg-sign --message='${config.commit_message}' 
+		"""
+			sh """
+			export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"
+			git push --progress origin HEAD:${config.pr_branch}
+		"""
+	}
+}
+
+def openPR(Map <String, ?> config){
+
+	dir(config.stash_folder_name) {
+
+		withCredentials([
+				string(
+						credentialsId: config.github_personal_access_token,
+						variable: 'GITHUB_TOKEN'
+				)
+		]) {
+
+			sh """
+				gh pr create --fill
+			"""
+
+		}
+	}
+
 }
 
 return this
