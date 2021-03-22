@@ -57,6 +57,9 @@ private static void validateConfig(Map<String, ?> config) {
   def validatingUtils = new ValidatingUtils()
   validatingUtils.ensureNotEmpty(config, 'k8s_namespace')
   validatingUtils.ensureNotEmpty(config, 'git_user_ssh_key')
+  validatingUtils.ensureNotEmpty(config, 'git_user_credentials_id')
+ 	validatingUtils.ensureNotEmpty(config, 'branch')
+ 	validatingUtils.ensureNotEmpty(config, 'repository')
 
 }
 
