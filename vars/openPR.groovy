@@ -43,7 +43,9 @@ def call(Map <String, ?> config = [:]) {
 
               gitUtils.gpgSetupForGit(config)
 
-              tagAndPush(config)
+              gitUtils.commitAndPush(config)
+
+              gitUtils.openPR(config)
 
             }
           }
@@ -60,45 +62,30 @@ private static void validateConfig(Map<String, ?> config) {
 
   def validatingUtils = new ValidatingUtils()
   validatingUtils.ensureNotEmpty(config, 'k8s_namespace')
+
+  //checkout
   validatingUtils.ensureNotEmpty(config, 'git_user_ssh_key')
-  validatingUtils.ensureNotEmpty(config, 'major_version')
-  validatingUtils.ensureNotEmpty(config, 'minor_version')
-  validatingUtils.ensureNotEmpty(config, 'patch_version')
-  validatingUtils.ensureNotEmpty(config, 'release_qualifier')
+ 	validatingUtils.ensureNotEmpty(config, 'branch')
+ 	validatingUtils.ensureNotEmpty(config, 'repository')
+
+  //git author
+  validatingUtils.ensureNotEmpty(config, 'git_user_credentials_id')
+
+  //gpg sign
+  validatingUtils.ensureNotEmpty(config, 'gpg_passphrase_credentials_id')
+ 	validatingUtils.ensureNotEmpty(config, 'gpg_signing_key_id')
+ 	validatingUtils.ensureNotEmpty(config, 'gpg_signing_key_secret')
+
+  //commit / push
+  validatingUtils.ensureNotEmpty(config, 'file_name')
+  validatingUtils.ensureNotEmpty(config, 'commit_message')
+
+  // Pull Request
+  validatingUtils.ensureNotEmpty(config, 'github_personal_access_token')
+  validatingUtils.ensureNotEmpty(config, 'pr_branch')
 
 }
 
 
 
-
-static String prefix(String release_qualifier){
-  switch(release_qualifier) {
-  //There is case statement defined for 4 cases
-  // Each case statement section has a break condition to exit the loop
-
-    case ~/^ER.*$/:
-      return "Engineering Release - ${release_qualifier}"
-    case ~/^CR.*$/:
-      return "Candidate Release - ${release_qualifier}"
-    case 'GA':
-      return 'General Availability Release'
-    default:
-      return 'Release'
-  }
-}
-
-
-
-def tagAndPush(Map <String, ?> config){
-
-  def tag = "3scale-${config.major_version}.${config.minor_version}.${config.patch_version}-${config.release_qualifier}"
-  def tag_message = "${prefix(config.release_qualifier as String)} of 3scale ${config.major_version}.${config.minor_version}.${config.patch_version}"
-
-  sh "git tag --sign --message='${tag_message}' ${tag}"
-  sh """
-    export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"
-    git push origin ${tag}
-  """
-
-}
 
