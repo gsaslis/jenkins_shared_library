@@ -12,6 +12,7 @@ def call(Map <String, ?> config = [:]) {
   def	manifests_scm_url = params.manifests_scm_url ?: config.manifests_scm_url
   def	manifests_scm_branch = params.manifests_scm_branch ?: config.manifests_scm_branch
 
+  def ciMessage = params.CI_MESSAGE // UMB message which triggered the build
 
 
   pipeline {
@@ -49,8 +50,40 @@ def call(Map <String, ?> config = [:]) {
           description: 'The static tag of the container image that should be deployed.',
           trim: true
       )
+      string(
+          defaultValue: '',
+          description: 'Contents of the CI message received from Universal Message Bus (UMB).',
+          name: 'CI_MESSAGE',
+          trim: true
+      )
     }
     stages {
+      stage("Parse UMB trigger") {
+        when {
+          expression {
+            params.CI_MESSAGE
+          }
+        }
+        agent {
+          node {
+            label 'swarm'
+          }
+        }
+        steps {
+          script {
+            echo "Raw message:\n${ciMessage}"
+
+            // Parse the message into a Map
+            def ciData = readJSON text: ciMessage
+            def component = ciData?.component
+            image_static_tag = ciData?.image_static_tag
+            manifest_path = "manifests/stg-saas/ocp4/${component}/stg-saas-${component}.yaml"
+
+            echo "Image static tag: ${image_static_tag}. \n Manifest path: ${manifest_path}."
+
+          }
+        }
+      }
       stage('Clone Git Repo') {
         steps {
           script {
@@ -94,8 +127,8 @@ def call(Map <String, ?> config = [:]) {
 
                 //gpg sign
                 gpg_passphrase_credentials_id: config.gpg_passphrase_credentials_id,
-               	gpg_signing_key_id: config.gpg_signing_key_id,
-               	gpg_signing_key_secret: config.gpg_signing_key_secret,
+                gpg_signing_key_id: config.gpg_signing_key_id,
+                gpg_signing_key_secret: config.gpg_signing_key_secret,
 
                 //PR
                 github_personal_access_token: config.github_personal_access_token,
