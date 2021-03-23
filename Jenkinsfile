@@ -44,8 +44,6 @@ updateComponentDeploymentManifestPipeline (
     image_static_tag: image_static_tag_to_deploy,
 
     k8s_namespace: k8s_namespace,
-    slack_channel: 'some_slack_channel',
-    notifications_email: 'some@email.com',
 )
 
 

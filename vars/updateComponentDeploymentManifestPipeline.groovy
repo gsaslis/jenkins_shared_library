@@ -14,9 +14,6 @@ def call(Map <String, ?> config = [:]) {
 
 
 
-  def notifications_email = params.notifications_email ?: config.notifications_email
-
-
   pipeline {
     agent {
       node {
@@ -50,12 +47,6 @@ def call(Map <String, ?> config = [:]) {
           name: 'image_static_tag',
           defaultValue: '',
           description: 'The static tag of the container image that should be deployed.',
-          trim: true
-      )
-      string(
-          defaultValue: '',
-          description: 'The email address to send notifications to',
-          name: 'notifications_email',
           trim: true
       )
     }
@@ -153,7 +144,5 @@ private static void validateParameters(Map<String, ?> config) {
   validatingUtils.ensureNotEmpty(config, 'github_personal_access_token')
 
   // Generic
-  validatingUtils.ensureNotEmpty(config, 'slack_channel')
   validatingUtils.ensureNotEmpty(config, 'k8s_namespace')
-  validatingUtils.ensureNotEmpty(config, 'notifications_email')
 }
