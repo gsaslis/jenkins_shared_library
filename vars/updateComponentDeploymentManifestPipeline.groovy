@@ -77,7 +77,7 @@ def call(Map <String, ?> config = [:]) {
             def ciData = readJSON text: ciMessage
             def component = ciData?.component
             image_static_tag = ciData?.image_static_tag
-            manifest_path = "manifests/stg-saas/ocp4/${component}/stg-saas-${component}.yaml"
+            manifest_path = lookup_manifest_path(component)
 
             echo "Image static tag: ${image_static_tag}. \n Manifest path: ${manifest_path}."
 
@@ -152,6 +152,10 @@ def call(Map <String, ?> config = [:]) {
 
 }
 
+static def lookup_manifest_path(component) {
+  "manifests/stg-saas/ocp4/${component}/stg-saas-${component}.yaml"
+}
+
 
 private static void validateParameters(Map<String, ?> config) {
   def validatingUtils = new ValidatingUtils()
@@ -163,10 +167,6 @@ private static void validateParameters(Map<String, ?> config) {
   validatingUtils.ensureNotEmpty(config, 'gpg_passphrase_credentials_id')
   validatingUtils.ensureNotEmpty(config, 'gpg_signing_key_id')
   validatingUtils.ensureNotEmpty(config, 'gpg_signing_key_secret')
-
-  //update deployment manifest with static tag
-  validatingUtils.ensureNotEmpty(config, 'manifest_path')
-  validatingUtils.ensureNotEmpty(config, 'image_static_tag')
 
   //commit / push
   validatingUtils.ensureNotEmpty(config, 'git_user_ssh_key')
