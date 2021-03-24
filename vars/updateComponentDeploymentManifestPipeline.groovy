@@ -12,6 +12,11 @@ def call(Map <String, ?> config = [:]) {
   def	manifests_scm_url = params.manifests_scm_url ?: config.manifests_scm_url
   def	manifests_scm_branch = params.manifests_scm_branch ?: config.manifests_scm_branch
 
+  if (!manifests_scm_url)
+    throw new Exception("Parameter 'manifests_scm_url' was not provided and is required.")
+  if (!manifests_scm_branch)
+    throw new Exception("Parameter 'manifests_scm_branch' was not provided and is required.")
+
   def ciMessage = params.CI_MESSAGE // UMB message which triggered the build
 
 
@@ -170,8 +175,6 @@ private static void validateParameters(Map<String, ?> config) {
 
   //commit / push
   validatingUtils.ensureNotEmpty(config, 'git_user_ssh_key')
-  validatingUtils.ensureNotEmpty(config, 'manifests_scm_branch')
-  validatingUtils.ensureNotEmpty(config, 'manifests_scm_url')
 
   // Pull Request
   validatingUtils.ensureNotEmpty(config, 'github_personal_access_token')
