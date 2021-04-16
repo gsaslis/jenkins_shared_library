@@ -134,10 +134,16 @@ def commitAndPush(Map <String, ?> config){
 
 	dir(config.stash_folder_name) {
 
+		def header = (config.commit_message_header) ?
+				" --message='${config.commit_message_header}' " :
+				""
+		def details = ""
+		config.commit_message_details.each { line -> details += " --message='${line}' "}
+
 		sh """
 			git checkout -b ${config.pr_branch}
 			git add ${config.file_name}
-			git commit --all --gpg-sign --message='${config.commit_message}' 
+			git commit --all --gpg-sign ${header} --message='${config.commit_message}' ${details}
 		"""
 			sh """
 			export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"

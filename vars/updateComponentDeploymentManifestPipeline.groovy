@@ -7,6 +7,8 @@ def call(Map <String, ?> config = [:]) {
   def	stash_folder_name = 'deployment_manifests'
 
   def	image_static_tag = params.image_static_tag ?: config.image_static_tag
+  def	upstream_scm_ref = params.upstream_scm_ref ?: config.upstream_scm_ref
+  def	downstream_scm_ref = params.downstream_scm_ref ?: config.downstream_scm_ref
   def	manifest_path = params.manifest_path ?: config.manifest_path
 
   def	manifests_scm_url = params.manifests_scm_url ?: config.manifests_scm_url
@@ -56,6 +58,18 @@ def call(Map <String, ?> config = [:]) {
           trim: true
       )
       string(
+          name: 'upstream_scm_ref',
+          defaultValue: '',
+          description: 'The upstream repo commit SHA from where the productized image originates from.',
+          trim: true
+      )
+      string(
+          name: 'downstream_scm_ref',
+          defaultValue: '',
+          description: 'The downstream repo commit SHA from where the productized image originates from.',
+          trim: true
+      )
+      string(
           defaultValue: '',
           description: 'Contents of the CI message received from Universal Message Bus (UMB).',
           name: 'CI_MESSAGE',
@@ -82,6 +96,8 @@ def call(Map <String, ?> config = [:]) {
             def ciData = readJSON text: ciMessage
             def component = ciData?.component
             image_static_tag = ciData?.image_static_tag
+            upstream_scm_ref = ciData?.upstream_scm_ref
+            downstream_scm_ref = ciData?.downstream_scm_ref
             manifest_path = lookup_manifest_path(component)
 
             echo "Image static tag: ${image_static_tag}. \n Manifest path: ${manifest_path}."
@@ -137,7 +153,9 @@ def call(Map <String, ?> config = [:]) {
 
                 //PR
                 github_personal_access_token: config.github_personal_access_token,
-                commit_message: "Deploys image ${image_static_tag} to ${manifest_path}",
+                commit_message_header: "Deploys image ${image_static_tag} to ${manifest_path}",
+                commit_message: "Upstream SHA: ${upstream_scm_ref}",
+                commit_message_details: ["Downstream SHA: ${downstream_scm_ref}", "/kind deploy"],
                 pr_branch: image_static_tag,
 
             )
