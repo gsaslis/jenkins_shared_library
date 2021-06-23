@@ -134,21 +134,32 @@ def commitAndPush(Map <String, ?> config){
 
 	dir(config.stash_folder_name) {
 
-		def header = (config.commit_message_header) ?
-				" --message='${config.commit_message_header}' " :
-				""
-		def details = ""
-		config.commit_message_details.each { line -> details += " --message='${line}' "}
+		withCredentials([
+				sshUserPrivateKey(
+						credentialsId: config.git_user_ssh_key,
+						keyFileVariable: 'PRIVATE_SSH_KEY',
+						passphraseVariable: 'PASSPHRASE',
+						usernameVariable: 'SSH_USERNAME'
+				)
+		]) {
 
-		sh """
-			git checkout -b ${config.pr_branch}
-			git add ${config.file_name}
-			git commit --all --gpg-sign ${header} --message='${config.commit_message}' ${details}
-		"""
+			def header = (config.commit_message_header) ?
+					" --message='${config.commit_message_header}' " :
+					""
+			def details = ""
+			config.commit_message_details.each { line -> details += " --message='${line}' " }
+
 			sh """
-			export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"
-			git push --progress origin HEAD:${config.pr_branch}
-		"""
+				git checkout -b ${config.pr_branch}
+				git add ${config.file_name}
+				git commit --all --gpg-sign ${header} --message='${config.commit_message}' ${details}
+			"""
+
+			sh """
+				export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no -i $PRIVATE_SSH_KEY"
+				git push --progress origin HEAD:${config.pr_branch}
+			"""
+		}
 	}
 }
 
