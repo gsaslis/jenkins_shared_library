@@ -32,20 +32,15 @@ def call(Map <String, ?> config = [:]) {
         node(POD_LABEL) {
           container('git') {
 
-            // For SSH private key authentication, try the sshagent step from the SSH Agent plugin.
-            sshagent(credentials: [config.git_user_ssh_key]) {
+            gitUtils.fixNonRootUserIdInContainer()
 
-              gitUtils.fixNonRootUserIdInContainer()
+            gitUtils.configGitAuthor(config)
 
-              gitUtils.configGitAuthor(config)
+            gitUtils.clone(config)
 
-              gitUtils.clone(config)
+            gitUtils.gpgSetupForGit(config)
 
-              gitUtils.gpgSetupForGit(config)
-
-              tagAndPush(config)
-
-            }
+            tagAndPush(config)
           }
         }
       }
@@ -91,16 +86,26 @@ static String prefix(String release_qualifier){
 
 def tagAndPush(Map <String, ?> config){
 
-  dir(config.stash_folder_name) {
+  withCredentials([
+      sshUserPrivateKey(
+          credentialsId: config.git_user_ssh_key,
+          keyFileVariable: 'PRIVATE_SSH_KEY',
+          passphraseVariable: 'PASSPHRASE',
+          usernameVariable: 'SSH_USERNAME'
+      )
+  ]) {
 
-    def tag = "3scale-${config.major_version}.${config.minor_version}.${config.patch_version}-${config.release_qualifier}"
-    def tag_message = "${prefix(config.release_qualifier as String)} of 3scale ${config.major_version}.${config.minor_version}.${config.patch_version}"
+    dir(config.stash_folder_name) {
 
-    sh "git tag --sign --message='${tag_message}' ${tag}"
-    sh """
-      export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no"
+      def tag = "3scale-${config.major_version}.${config.minor_version}.${config.patch_version}-${config.release_qualifier}"
+      def tag_message = "${prefix(config.release_qualifier as String)} of 3scale ${config.major_version}.${config.minor_version}.${config.patch_version}"
+
+      sh "git tag --sign --message='${tag_message}' ${tag}"
+      sh """
+      export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no -i $PRIVATE_SSH_KEY"
       git push origin ${tag}
     """
+    }
   }
 }
 

@@ -32,16 +32,13 @@ def call(Map <String, ?> config = [:]) {
         node(POD_LABEL) {
           container('git') {
 
-            // For SSH private key authentication, try the sshagent step from the SSH Agent plugin.
-            sshagent(credentials: [config.git_user_ssh_key]) {
+            gitUtils.fixNonRootUserIdInContainer()
 
-              gitUtils.fixNonRootUserIdInContainer()
+            gitUtils.configGitAuthor(config)
 
-              gitUtils.configGitAuthor(config)
+            gitUtils.clone(config)
 
-              gitUtils.clone(config)
 
-            }
           }
         }
       }
