@@ -176,7 +176,7 @@ def call(Map <String, ?> config = [:]) {
 }
 
 static def lookup_manifest_path(component) {
-  "manifests/stg-saas/ocp4/${component}/stg-saas-${component}.yaml"
+  "manifests/stg-saas/ocp4/3scale-saas/${component}/stg-saas-${component}.yaml"
 }
 
 
