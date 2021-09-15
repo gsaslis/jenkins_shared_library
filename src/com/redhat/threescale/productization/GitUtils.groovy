@@ -173,9 +173,19 @@ def openPR(Map <String, ?> config){
 						variable: 'GITHUB_TOKEN'
 				)
 		]) {
+			def header = (config.commit_message_header) ?
+					" --title='${config.commit_message_header}' " :
+					""
 
 			sh """
-				gh pr create --fill
+
+				PR_ID=\$(gh pr status --json number --jq '.currentBranch.number')
+				if [ -z "\${PR_ID}" ]
+				then
+					gh pr create --fill
+				else
+					gh pr edit \${PR_ID} ${header} --body "${config.commit_message}"
+				fi
 			"""
 
 		}

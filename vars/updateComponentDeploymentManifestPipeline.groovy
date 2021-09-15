@@ -19,6 +19,8 @@ def call(Map <String, ?> config = [:]) {
   if (!manifests_scm_branch)
     throw new Exception("Parameter 'manifests_scm_branch' was not provided and is required.")
 
+  def component = ''
+
   def ciMessage = params.CI_MESSAGE // UMB message which triggered the build
 
 
@@ -94,7 +96,7 @@ def call(Map <String, ?> config = [:]) {
 
             // Parse the message into a Map
             def ciData = readJSON text: ciMessage
-            def component = ciData?.component
+            component = ciData?.component
             image_static_tag = ciData?.image_static_tag
             upstream_scm_ref = ciData?.upstream_scm_ref
             downstream_scm_ref = ciData?.downstream_scm_ref
@@ -156,7 +158,7 @@ def call(Map <String, ?> config = [:]) {
                 commit_message_header: "Deploys image ${image_static_tag} to ${manifest_path}",
                 commit_message: "Upstream SHA: ${upstream_scm_ref}",
                 commit_message_details: ["Downstream SHA: ${downstream_scm_ref}", "/kind deploy"],
-                pr_branch: image_static_tag,
+                pr_branch: "deploy/${component}",
 
             )
           }
