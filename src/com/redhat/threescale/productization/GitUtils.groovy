@@ -177,7 +177,7 @@ def openPR(Map <String, ?> config){
 					" --title='${config.commit_message_header}' " :
 					""
 			def details = ""
-			config.commit_message_details.each { line -> details += " --message='${line}' " }
+			config.commit_message_details.each { line -> details += "${line}\n" }
 
 			sh """
 
@@ -186,7 +186,7 @@ def openPR(Map <String, ?> config){
 				then
 					gh pr create --fill
 				else
-					gh pr edit \${PR_ID} ${header} --body "${config.commit_message}" ${details}
+					gh pr edit \${PR_ID} ${header} --body "${config.commit_message}\n ${details}"
 				fi
 			"""
 
