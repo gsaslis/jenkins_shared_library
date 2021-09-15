@@ -157,7 +157,7 @@ def commitAndPush(Map <String, ?> config){
 
 			sh """
 				export GIT_SSH_COMMAND="ssh -oStrictHostKeyChecking=no -i $PRIVATE_SSH_KEY"
-				git push --progress origin HEAD:${config.pr_branch}
+				git push --progress --force origin HEAD:${config.pr_branch}
 			"""
 		}
 	}
