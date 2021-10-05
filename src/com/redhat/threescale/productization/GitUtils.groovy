@@ -181,7 +181,7 @@ def openPR(Map <String, ?> config){
 
 			sh """
 
-				PR_ID=\$(gh pr status --json number --jq '.currentBranch.number')
+				PR_ID=\$(gh pr status --json number,state --jq '.currentBranch|select(.state=="OPEN").number')
 				if [ -z "\${PR_ID}" ]
 				then
 					gh pr create --fill
