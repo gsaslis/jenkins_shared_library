@@ -11,6 +11,8 @@ def call(Map <String, ?> config = [:]) {
   def	downstream_scm_ref = params.downstream_scm_ref ?: config.downstream_scm_ref
   def	manifest_path = params.manifest_path ?: config.manifest_path
 
+  String distribution_scope
+
   def	manifests_scm_url = params.manifests_scm_url ?: config.manifests_scm_url
   def	manifests_scm_branch = params.manifests_scm_branch ?: config.manifests_scm_branch
 
@@ -100,7 +102,8 @@ def call(Map <String, ?> config = [:]) {
             image_static_tag = ciData?.image_static_tag
             upstream_scm_ref = ciData?.upstream_scm_ref
             downstream_scm_ref = ciData?.downstream_scm_ref
-            manifest_path = lookup_manifest_path(component)
+            distribution_scope = ciData?.distribution_scope
+            manifest_path = lookup_manifest_path(distribution_scope, component)
 
             echo "Image static tag: ${image_static_tag}. \n Manifest path: ${manifest_path}."
 
@@ -158,7 +161,7 @@ def call(Map <String, ?> config = [:]) {
                 commit_message_header: "Deploys image ${image_static_tag} to ${manifest_path}",
                 commit_message: "Upstream SHA: ${upstream_scm_ref}",
                 commit_message_details: ["Downstream SHA: ${downstream_scm_ref}", "/kind deploy"],
-                pr_branch: "deploy/${component}",
+                pr_branch: "deploy/${lookup_deployment_environment(distribution_scope)}/${component}",
 
             )
           }
@@ -177,8 +180,20 @@ def call(Map <String, ?> config = [:]) {
 
 }
 
-static def lookup_manifest_path(component) {
-  "manifests/stg-saas/ocp4/3scale-saas/${component}/stg-saas-${component}.yaml"
+static def lookup_deployment_environment(String release_stream) {
+
+  Map<String, String> DEPLOYMENT_ENVIRONMENTS = [
+    alpha: 'stg',
+    candidate: 'stg',
+    stable: 'pro',
+  ]
+
+  DEPLOYMENT_ENVIRONMENTS[release_stream]
+}
+
+static def lookup_manifest_path(String release_stream, String component) {
+  def environment = lookup_deployment_environment(release_stream)
+  "manifests/${environment}-saas/ocp4/3scale-saas/${component}/${environment}-saas-${component}.yaml"
 }
 
 
