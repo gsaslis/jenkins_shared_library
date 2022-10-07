@@ -32,6 +32,10 @@ def call(Map <String, ?> config = [:]) {
         node(POD_LABEL) {
           container('git') {
 
+            if(config.ssh_key_type){
+              sh "ssh-keyscan -t ${config.ssh_key_type} ${config.git_server} >> ~/.ssh/known_hosts"
+            }
+            
             gitUtils.fixNonRootUserIdInContainer()
 
             gitUtils.configGitAuthor(config)
@@ -60,7 +64,6 @@ private static void validateConfig(Map<String, ?> config) {
   validatingUtils.ensureNotEmpty(config, 'minor_version')
   validatingUtils.ensureNotEmpty(config, 'patch_version')
   validatingUtils.ensureNotEmpty(config, 'release_qualifier')
-
 }
 
 
