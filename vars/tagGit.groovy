@@ -33,6 +33,7 @@ def call(Map <String, ?> config = [:]) {
           container('git') {
 
             if(config.ssh_key_type){
+              mkdir -p ~/.ssh/
               sh "ssh-keyscan -t ${config.ssh_key_type} ${config.git_server} >> ~/.ssh/known_hosts"
             }
             
